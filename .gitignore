@@ -1,0 +1,7 @@
+# Rust stuff
+/target
+
+# IDEs
+.idea/
+.vscode/
+.zed/
