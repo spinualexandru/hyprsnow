@@ -1,7 +1,10 @@
+
+
 # hyprsnow
 
 A snow overlay for Wayland/Hyprland. Snowflakes fall across your screen, land on window titlebars and the screen bottom, then melt away.
 
+https://github.com/user-attachments/assets/634c215b-2aa7-40e0-9172-222355349400
 
 ## Quickstart
 
