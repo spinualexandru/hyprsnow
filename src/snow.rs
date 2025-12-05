@@ -173,13 +173,23 @@ impl Application for Waysnow {
                             window_addr,
                             offset_x,
                         } => {
-                            // Update position if landed on a window
                             if let Some(addr) = window_addr {
                                 if let Some(window) =
                                     self.windows.iter().find(|w| &w.address == addr)
                                 {
+                                    let expected_y = window.y - flake.radius;
+
+                                    // If window moved vertically or snowflake outside width, fall
+                                    if (flake.y - expected_y).abs() > 1.0
+                                        || *offset_x < 0.0
+                                        || *offset_x > window.width
+                                    {
+                                        flake.state = SnowState::Falling;
+                                        continue;
+                                    }
+
+                                    // Follow horizontal movement
                                     flake.x = window.x + *offset_x;
-                                    flake.y = window.y - flake.radius;
                                 } else {
                                     // Window was closed - start falling again
                                     flake.state = SnowState::Falling;
