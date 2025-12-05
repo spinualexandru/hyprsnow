@@ -20,6 +20,7 @@ fn main() -> Result<(), iced_layershell::Error> {
             anchor: Anchor::Top | Anchor::Bottom | Anchor::Left | Anchor::Right,
             layer: Layer::Overlay,
             keyboard_interactivity: KeyboardInteractivity::None,
+            events_transparent: true,
             ..Default::default()
         },
         flags: config,
