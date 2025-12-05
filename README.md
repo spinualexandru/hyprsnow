@@ -1,5 +1,3 @@
-
-
 # hyprsnow
 
 A snow overlay for Wayland/Hyprland. Snowflakes fall across your screen, land on window titlebars and the screen bottom, then melt away.
