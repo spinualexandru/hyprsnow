@@ -1,5 +1,8 @@
 use crate::config::SnowConfig;
-use crate::hyprland::{get_hyprland_windows, get_screen_size, spawn_event_listener, WindowRect};
+use crate::hyprland::{
+    get_hyprland_windows, get_monitors_with_fullscreen_state, get_screen_size,
+    spawn_event_listener, MonitorRect, WindowRect,
+};
 use hyprland::shared::Address;
 use iced::mouse::Cursor;
 use iced::widget::canvas::{self, Canvas, Frame, Geometry, Path};
@@ -60,6 +63,7 @@ impl Snowflake {
 pub struct Waysnow {
     snowflakes: Vec<Snowflake>,
     windows: Vec<WindowRect>,
+    monitors: Vec<MonitorRect>,
     event_rx: mpsc::Receiver<crate::hyprland::HyprlandEvent>,
     last_tick: Instant,
     time: f32,
@@ -67,6 +71,22 @@ pub struct Waysnow {
     height: f32,
     config: SnowConfig,
     cache: canvas::Cache,
+}
+
+impl Waysnow {
+    fn is_in_fullscreen_monitor(&self, x: f32, y: f32) -> bool {
+        for monitor in &self.monitors {
+            if monitor.has_fullscreen
+                && x >= monitor.x
+                && x < monitor.x + monitor.width
+                && y >= monitor.y
+                && y < monitor.y + monitor.height
+            {
+                return true;
+            }
+        }
+        false
+    }
 }
 
 #[to_layer_message]
@@ -91,12 +111,14 @@ impl Application for Waysnow {
             .collect();
 
         let windows = get_hyprland_windows();
+        let monitors = get_monitors_with_fullscreen_state();
         let event_rx = spawn_event_listener();
 
         (
             Self {
                 snowflakes,
                 windows,
+                monitors,
                 event_rx,
                 last_tick: Instant::now(),
                 time: 0.0,
@@ -123,6 +145,7 @@ impl Application for Waysnow {
                 // Check for hyprland events (non-blocking)
                 while let Ok(_event) = self.event_rx.try_recv() {
                     self.windows = get_hyprland_windows();
+                    self.monitors = get_monitors_with_fullscreen_state();
                 }
 
                 let mut rng = rand::thread_rng();
@@ -248,6 +271,11 @@ impl canvas::Program<Message> for Waysnow {
     ) -> Vec<Geometry> {
         let geometry = self.cache.draw(renderer, bounds.size(), |frame: &mut Frame| {
             for flake in &self.snowflakes {
+                // Skip snowflakes on monitors with fullscreen apps
+                if self.is_in_fullscreen_monitor(flake.x, flake.y) {
+                    continue;
+                }
+
                 let color = Color {
                     r: 1.0,
                     g: 1.0,
