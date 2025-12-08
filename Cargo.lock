@@ -1754,7 +1754,7 @@ dependencies = [
 
 [[package]]
 name = "hyprsnow"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "clap",
  "hyprland",
