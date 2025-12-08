@@ -1,6 +1,6 @@
 [package]
 name = "hyprsnow"
-version = "0.1.3"
+version = "0.1.4"
 edition = "2024"
 authors = ["Alex Spinu"]
 description = "Simple and configurable snow effect for Hyprland"

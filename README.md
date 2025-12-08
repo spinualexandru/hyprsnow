@@ -64,7 +64,7 @@ general {
 }
 ```
 
-CLI arguments override config file values.
+**Note: CLI arguments override config file values unless you changed the config after starting hyprsnow.  Hotreload changes supercede CLI args.**
 
 ## Hyprland Integration
 
