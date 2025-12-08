@@ -1,7 +1,11 @@
 use crate::cli::Args;
+use notify::{Event, EventKind, RecursiveMode, Watcher};
 use std::path::PathBuf;
+use std::sync::mpsc;
+use std::thread;
+use std::time::{Duration, Instant};
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct SnowConfig {
     pub intensity: u8,
     pub size_min: f32,
@@ -10,6 +14,11 @@ pub struct SnowConfig {
     pub speed_max: f32,
     pub drift: f32,
     pub max_opacity: f32,
+}
+
+#[derive(Debug, Clone)]
+pub enum ConfigEvent {
+    ConfigChanged(SnowConfig),
 }
 
 impl Default for SnowConfig {
@@ -26,7 +35,7 @@ impl Default for SnowConfig {
     }
 }
 
-fn get_config_path() -> Option<PathBuf> {
+pub fn get_config_path() -> Option<PathBuf> {
     let config_home = std::env::var("XDG_CONFIG_HOME")
         .map(PathBuf::from)
         .unwrap_or_else(|_| {
@@ -107,4 +116,78 @@ pub fn apply_cli_overrides(config: &mut SnowConfig, args: &Args) {
     if let Some(v) = args.max_opacity {
         config.max_opacity = v.clamp(0.0, 1.0);
     }
+}
+
+pub fn spawn_config_watcher() -> mpsc::Receiver<ConfigEvent> {
+    let (tx, rx) = mpsc::channel();
+
+    thread::spawn(move || {
+        let config_path = match get_config_path() {
+            Some(p) => p,
+            None => {
+                eprintln!("hyprsnow: No config file found, hot reload disabled");
+                return;
+            }
+        };
+
+        let watch_dir = match config_path.parent() {
+            Some(p) => p.to_path_buf(),
+            None => return,
+        };
+
+        let config_filename = config_path
+            .file_name()
+            .and_then(|n| n.to_str())
+            .unwrap_or("hyprsnow.conf")
+            .to_string();
+
+        let tx_clone = tx.clone();
+        let last_reload = std::sync::Arc::new(std::sync::Mutex::new(Instant::now()));
+        let last_reload_clone = last_reload.clone();
+        let debounce_duration = Duration::from_millis(100);
+
+        let mut watcher = match notify::recommended_watcher(move |res: Result<Event, _>| {
+            if let Ok(event) = res {
+                match event.kind {
+                    EventKind::Modify(_) | EventKind::Create(_) => {
+                        // Check if this event is for our config file
+                        let is_config_file = event
+                            .paths
+                            .iter()
+                            .any(|p| p.file_name().and_then(|n| n.to_str()) == Some(&config_filename));
+
+                        if is_config_file {
+                            // Debounce: skip if we reloaded recently
+                            let mut last = last_reload_clone.lock().unwrap();
+                            if last.elapsed() > debounce_duration {
+                                *last = Instant::now();
+                                drop(last);
+                                let new_config = load_config();
+                                let _ = tx_clone.send(ConfigEvent::ConfigChanged(new_config));
+                            }
+                        }
+                    }
+                    _ => {}
+                }
+            }
+        }) {
+            Ok(w) => w,
+            Err(e) => {
+                eprintln!("hyprsnow: Failed to create file watcher: {}", e);
+                return;
+            }
+        };
+
+        if let Err(e) = watcher.watch(&watch_dir, RecursiveMode::NonRecursive) {
+            eprintln!("hyprsnow: Failed to watch config directory: {}", e);
+            return;
+        }
+
+        // Keep thread alive - watcher is dropped when thread ends
+        loop {
+            thread::park();
+        }
+    });
+
+    rx
 }
