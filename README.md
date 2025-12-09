@@ -62,7 +62,8 @@ general {
     speed_max = 80.0
     drift = 20.0
     max_opacity = 1.0
-    #image_paths = "/path/to/snowflake/image.png /path/to/snowflake/image2.png"
+    image_path = "/path/to/snowflake/image.png"
+    image_path = "/path/to/snowflake/image2.png"
 }
 ```
 
