@@ -36,5 +36,5 @@ pub struct Args {
     /// If not provided, default circle shape will be used
     /// Make sure the image has a transparent background (e.g., PNG format)
     #[arg(long, num_args(1..))]
-    pub image_paths: Option<Vec<String>>,
+    pub image_path: Option<Vec<String>>,
 }
