@@ -102,7 +102,7 @@ pub fn load_config() -> SnowConfig {
         image_paths: config
             .get_handler_calls("general:image_path")
             .filter(|v| !v.is_empty())
-            .map(|v| v.clone()),
+            .cloned()
     }
 }
 
