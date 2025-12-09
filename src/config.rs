@@ -14,7 +14,7 @@ pub struct SnowConfig {
     pub speed_max: f32,
     pub drift: f32,
     pub max_opacity: f32,
-    pub image_path: Option<String>,
+    pub image_paths: Option<Vec<String>>,
 }
 
 #[derive(Debug, Clone)]
@@ -32,7 +32,7 @@ impl Default for SnowConfig {
             speed_max: 80.0,
             drift: 20.0,
             max_opacity: 1.0,
-            image_path: None,
+            image_paths: None,
         }
     }
 }
@@ -93,10 +93,14 @@ pub fn load_config() -> SnowConfig {
             .get_float("general:max_opacity")
             .map(|v| (v as f32).clamp(0.0, 1.0))
             .unwrap_or(1.0),
-        image_path: config
-            .get_string("general:image_path")
-            .map(|s| s.to_string())
-            .ok(),
+        image_paths: config
+            .get_string("general:image_paths")
+            .map(|s| {
+                s.split_whitespace()
+                    .map(|p| p.to_string())
+                    .collect::<Vec<String>>()
+            }).ok()
+            .filter(|v| !v.is_empty()),
     }
 }
 

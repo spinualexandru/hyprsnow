@@ -32,10 +32,18 @@ struct Snowflake {
     drift_amount: f32,
     opacity: f32,
     state: SnowState,
+    image_index: Option<usize>,
 }
 
 impl Snowflake {
     fn new(width: f32, height: f32, config: &SnowConfig, rng: &mut impl Rng) -> Self {
+        let image_index = config
+            .image_paths
+            .as_ref()
+            .and_then(|paths| {
+                if paths.is_empty() { None } else { Some(rng.random_range(0..paths.len())) }
+            });
+
         Self {
             x: rng.random_range(0.0..width),
             y: rng.random_range(0.0..height),
@@ -45,6 +53,7 @@ impl Snowflake {
             drift_amount: rng.random_range(0.0..config.drift),
             opacity: rng.random_range(0.7..1.0) * config.max_opacity,
             state: SnowState::Falling,
+            image_index,
         }
     }
 
@@ -57,6 +66,10 @@ impl Snowflake {
         self.drift_amount = rng.random_range(0.0..config.drift);
         self.opacity = rng.random_range(0.7..1.0) * config.max_opacity;
         self.state = SnowState::Falling;
+
+        self.image_index = config.image_paths.as_ref().and_then(|paths| {
+            if paths.is_empty() { None } else { Some(rng.random_range(0..paths.len())) }
+        });
     }
 }
 
@@ -74,7 +87,7 @@ pub struct Waysnow {
     height: f32,
     config: SnowConfig,
     cache: canvas::Cache,
-    image_handle: Option<ImageHandle>,
+    cached_images: Vec<ImageHandle>,
 }
 
 impl Waysnow {
@@ -110,15 +123,13 @@ impl Waysnow {
         let old_count = self.config.intensity as usize * 50;
         let new_count = new_config.intensity as usize * 50;
 
-        if new_config.image_path != self.config.image_path {
-            if let Some(path) = &new_config.image_path {
-                println!("Loaded snowflake image path: {}", path);
+        if self.config.image_paths != new_config.image_paths {
+            self.cached_images.clear();
+            if let Some(paths) = &new_config.image_paths {
+                for p in paths {
+                    self.cached_images.push(ImageHandle::from_path(p));
+                }
             }
-            self.image_handle = new_config
-                .image_path
-                .as_ref()
-                .map(|p| ImageHandle::from_path(p));
-
             self.cache.clear();
         }
 
@@ -163,7 +174,12 @@ pub fn boot(config: SnowConfig) -> (Waysnow, Task<Message>) {
     let event_rx = spawn_event_listener();
     let config_rx = spawn_config_watcher();
 
-    let image_handle = config.image_path.as_ref().map(|p| ImageHandle::from_path(p));
+    let mut cached_images = Vec::new();
+    if let Some(paths) = &config.image_paths {
+        for p in paths {
+            cached_images.push(ImageHandle::from_path(p));
+        }
+    }
 
     (
         Waysnow {
@@ -180,7 +196,7 @@ pub fn boot(config: SnowConfig) -> (Waysnow, Task<Message>) {
             height,
             config,
             cache: canvas::Cache::default(),
-            image_handle,
+            cached_images,
         },
         Task::none(),
     )
@@ -328,11 +344,12 @@ impl canvas::Program<Message> for &Waysnow {
                 if self.is_in_fullscreen_monitor(flake.x, flake.y) {
                     continue;
                 }
-                if let Some(ref handle) = self.image_handle {
-                    let size = flake.radius * 2.0;
-                    frame.with_save(|frame| {
+
+                if let Some(idx) = flake.image_index {
+                    if let Some(handle) = self.cached_images.get(idx) {
+                        let size = flake.radius * 2.0;
                         frame.draw_image(
-                            iced::Rectangle {
+                            Rectangle {
                                 x: flake.x - flake.radius,
                                 y: flake.y - flake.radius,
                                 width: size,
@@ -340,18 +357,19 @@ impl canvas::Program<Message> for &Waysnow {
                             },
                             handle,
                         );
-                    });
-                } else {
-                    let color = Color {
-                        r: 1.0,
-                        g: 1.0,
-                        b: 1.0,
-                        a: flake.opacity,
-                    };
-
-                    let circle = Path::circle(Point::new(flake.x, flake.y), flake.radius);
-                    frame.fill(&circle, color);
+                        continue;
+                    }
                 }
+
+                let color = Color {
+                    r: 1.0,
+                    g: 1.0,
+                    b: 1.0,
+                    a: flake.opacity,
+                };
+
+                let circle = Path::circle(Point::new(flake.x, flake.y), flake.radius);
+                frame.fill(&circle, color);
             }
         });
 

@@ -38,16 +38,16 @@ hyprsnow [OPTIONS]
 
 ### Options
 
-| Option                  | Description                                                                      |
-|-------------------------|----------------------------------------------------------------------------------|
-| `--intensity <1-10>`    | Snow intensity (default: 3)                                                      |
-| `--size-min <float>`    | Minimum snowflake size in pixels (default: 2.0)                                  |
-| `--size-max <float>`    | Maximum snowflake size in pixels (default: 5.0)                                  |
-| `--speed-min <float>`   | Minimum fall speed in pixels/second (default: 30.0)                              |
-| `--speed-max <float>`   | Maximum fall speed in pixels/second (default: 80.0)                              |
-| `--drift <float>`       | Horizontal drift intensity, 0 = none, 30 = strong (default: 20.0)                |
-| `--max-opacity <float>` | Maximum snowflake opacity, 0.0 = invisible, 1.0 = solid (default: 1.0)           |
-| `--image-path <Path>`   | Set optional image path for snowflake. Otherwise the default circle will be used |
+| Option                   | Description                                                                      |
+|--------------------------|----------------------------------------------------------------------------------|
+| `--intensity <1-10>`     | Snow intensity (default: 3)                                                      |
+| `--size-min <float>`     | Minimum snowflake size in pixels (default: 2.0)                                  |
+| `--size-max <float>`     | Maximum snowflake size in pixels (default: 5.0)                                  |
+| `--speed-min <float>`    | Minimum fall speed in pixels/second (default: 30.0)                              |
+| `--speed-max <float>`    | Maximum fall speed in pixels/second (default: 80.0)                              |
+| `--drift <float>`        | Horizontal drift intensity, 0 = none, 30 = strong (default: 20.0)                |
+| `--max-opacity <float>`  | Maximum snowflake opacity, 0.0 = invisible, 1.0 = solid (default: 1.0)           |
+| `--image-paths <String>` | Set optional image path for snowflake. Otherwise the default circle will be used |
 
 ## Configuration
 
@@ -62,7 +62,7 @@ general {
     speed_max = 80.0
     drift = 20.0
     max_opacity = 1.0
-    image_path = "/path/to/snowflake/image.png"
+    image_paths = "/path/to/snowflake/image.png /path/to/snowflake/image2.png ..."
 }
 ```
 

@@ -35,6 +35,6 @@ pub struct Args {
     /// Path to custom snowflake image
     /// If not provided, default circle shape will be used
     /// Make sure the image has a transparent background (e.g., PNG format)
-    #[arg(long)]
-    pub image_path: Option<String>,
+    #[arg(long, num_args(1..))]
+    pub image_paths: Option<Vec<String>>,
 }
