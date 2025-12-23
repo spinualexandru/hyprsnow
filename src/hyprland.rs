@@ -83,6 +83,7 @@ pub fn get_monitors_with_fullscreen_state() -> Vec<MonitorRect> {
 
     monitors
         .iter()
+        .filter(|m| !m.disabled)
         .map(|monitor| {
             let has_fullscreen = workspaces
                 .as_ref()
